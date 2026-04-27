@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    function isAdmin() {
+      // Strictly restrict admin panel to this email
+      return isSignedIn() && request.auth.token.email == 'misaldhananjay26@gmail.com';
+    }
+    
+    function isOwner(restaurantId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/restaurants/$(restaurantId)) && 
+             get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId == request.auth.uid;
+    }
+
+    match /restaurants/{restaurantId} {
+      function isValidRestaurant(data) {
+        return data.keys().hasAll(['ownerId', 'name', 'active', 'createdAt']) && 
+               data.ownerId is string && data.ownerId == request.auth.uid &&
+               data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+               data.active is bool &&
+               data.createdAt is timestamp;
+      }
+      
+      allow read: if true; // Public can see restaurants
+      allow create: if isSignedIn() && isValidId(restaurantId) && isValidRestaurant(incoming()) && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && (isOwner(restaurantId) || isAdmin()) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'active']) &&
+        incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100 &&
+        incoming().active is bool &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && (isOwner(restaurantId) || isAdmin());
+    }
+
+    match /menus/{menuId} {
+      function isValidMenu(data) {
+        return data.keys().hasAll(['restaurantId', 'name', 'price', 'category', 'active', 'createdAt']) &&
+               data.restaurantId is string &&
+               data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+               data.price is number && data.price >= 0 &&
+               data.category is string && data.category.size() > 0 && data.category.size() <= 50 &&
+               data.active is bool &&
+               data.createdAt is timestamp;
+      }
+      
+      allow read: if true; // Public can see menus
+      allow create: if isSignedIn() && isValidId(menuId) && isValidMenu(incoming()) && isOwner(incoming().restaurantId) && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && (isOwner(existing().restaurantId) || isAdmin()) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'category', 'image', 'active']) &&
+        incoming().name is string && incoming().name.size() > 0 && incoming().price is number &&
+        incoming().category is string && incoming().active is bool &&
+        incoming().restaurantId == existing().restaurantId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && (isOwner(existing().restaurantId) || isAdmin());
+    }
+
+    match /orders/{orderId} {
+      function isValidOrder(data) {
+        return data.keys().hasAll(['restaurantId', 'tableNumber', 'status', 'items', 'total', 'createdAt']) &&
+               data.restaurantId is string &&
+               data.tableNumber is number &&
+               data.status in ['pending', 'preparing', 'served'] &&
+               data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
+               data.total is number && data.total >= 0 &&
+               data.createdAt is timestamp;
+      }
+
+      // Customers can create orders without being logged in
+      allow create: if isValidId(orderId) && isValidOrder(incoming()) && incoming().status == 'pending' && incoming().createdAt == request.time;
+      // Restaurants can see and update their orders
+      allow read: if isSignedIn() && (isOwner(resource.data.restaurantId) || isAdmin());
+      allow update: if isSignedIn() && (isOwner(existing().restaurantId) || isAdmin()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
+        incoming().status in ['pending', 'preparing', 'served'] &&
+        incoming().restaurantId == existing().restaurantId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && (isOwner(existing().restaurantId) || isAdmin());
+    }
+    
+    match /subscriptions/{subId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.restaurantId) || isAdmin());
+      allow create: if isSignedIn() && isValidId(subId) &&
+        incoming().keys().hasAll(['restaurantId', 'plan', 'status', 'createdAt']) &&
+        incoming().restaurantId is string &&
+        incoming().plan in ['free', 'pro'] &&
+        incoming().status in ['active', 'inactive'] &&
+        incoming().createdAt is timestamp &&
+        incoming().createdAt == request.time;
+      allow update: if isSignedIn() && (isOwner(existing().restaurantId) || isAdmin()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'plan']) &&
+        incoming().plan in ['free', 'pro'] &&
+        incoming().status in ['active', 'inactive'];
+    }
+
+    match /invoices/{invoiceId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.restaurantId) || isAdmin());
+      allow create: if isSignedIn() && isOwner(incoming().restaurantId) && 
+        isValidId(invoiceId) &&
+        incoming().keys().hasAll(['restaurantId', 'orderId', 'tableNumber', 'items', 'total', 'createdAt']) &&
+        incoming().restaurantId is string &&
+        incoming().orderId is string &&
+        incoming().tableNumber is number &&
+        incoming().items is list &&
+        incoming().total is number &&
+        incoming().createdAt is timestamp &&
+        incoming().createdAt == request.time;
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "Restaurant": {
+      "title": "Restaurant",
+      "description": "Details of a restaurant.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["ownerId", "name", "active", "createdAt"]
+    },
+    "Menu": {
+      "title": "Menu",
+      "description": "Menu item belonging to a restaurant.",
+      "type": "object",
+      "properties": {
+        "restaurantId": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["restaurantId", "name", "price", "category", "active", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order.",
+      "type": "object",
+      "properties": {
+        "restaurantId": { "type": "string" },
+        "tableNumber": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "preparing", "served"] },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["restaurantId", "tableNumber", "status", "items", "total", "createdAt"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Restaurant subscription details.",
+      "type": "object",
+      "properties": {
+        "restaurantId": { "type": "string" },
+        "plan": { "type": "string", "enum": ["free", "pro"] },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["restaurantId", "plan", "status", "createdAt"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Invoice generated for an order.",
+      "type": "object",
+      "properties": {
+        "restaurantId": { "type": "string" },
+        "orderId": { "type": "string" },
+        "tableNumber": { "type": "number" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["restaurantId", "orderId", "tableNumber", "items", "total", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/restaurants/{restaurantId}": {
+      "schema": "Restaurant",
+      "description": "Stores restaurant details."
+    },
+    "/menus/{menuId}": {
+      "schema": "Menu",
+      "description": "Stores menu items."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Stores customer orders."
+    },
+    "/subscriptions/{subId}": {
+      "schema": "Subscription",
+      "description": "Stores restaurant subscriptions."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Stores generated invoices."
+    }
+  }
+}
