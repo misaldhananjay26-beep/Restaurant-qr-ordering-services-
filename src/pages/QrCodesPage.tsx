@@ -43,30 +43,51 @@ export default function QrCodesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 print:grid-cols-3 print:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 print:grid-cols-3 print:gap-8">
         {Array.from({ length: tableCount }).map((_, i) => {
           const tableNum = i + 1;
           const url = generateQrUrl(tableNum);
           
           return (
-            <div key={tableNum} className="bg-white p-6 rounded-xl flex flex-col items-center border-4 border-[#D4AF37]/20 print:border-[#000]">
-              <div className="mb-4 text-black text-center">
-                <p className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-1">Scan to order</p>
-                <h3 className="font-bold text-2xl">Table {tableNum}</h3>
-              </div>
+            <div key={tableNum} className="group relative bg-[#111] p-1 rounded-2xl print:bg-white print:p-0">
+              {/* Animated Gradient Border Layer (Screen Only) */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37] via-[#FFD700] to-[#B8860B] rounded-2xl opacity-50 blur-sm group-hover:opacity-100 transition-opacity duration-500 print:hidden" />
               
-              <div className="bg-white p-2 border-2 border-dashed border-gray-200 rounded-lg">
-                <QRCodeSVG 
-                  value={url} 
-                  size={120}
-                  level="Q"
-                  fgColor="#000000"
-                  bgColor="#ffffff"
-                />
-              </div>
+              {/* Main Card */}
+              <div className="relative bg-[#0A0A0A] print:bg-white h-full rounded-xl flex flex-col items-center border border-[#333] print:border-4 print:border-[#000] overflow-hidden">
+                {/* Decorative Pattern Background */}
+                <div className="absolute inset-0 opacity-[0.03] print:opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent pointer-events-none" />
 
-              <div className="mt-4 text-center">
-                <p className="text-[10px] text-gray-400 font-medium">ArjunaTable.com</p>
+                <div className="w-full bg-gradient-to-b from-[#1A1A1A] to-transparent print:from-white p-6 pb-2 text-center relative z-10">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-[#D4AF37] print:text-gray-500 font-bold mb-2">Scan to order</p>
+                  <h3 className="font-extrabold text-3xl text-white print:text-black tracking-tight">TABLE {tableNum}</h3>
+                </div>
+                
+                <div className="p-6 relative z-10 w-full flex justify-center">
+                  <div className="bg-white p-4 rounded-xl shadow-2xl shadow-black/50 print:shadow-none ring-4 ring-[#D4AF37]/20 print:ring-[#000]">
+                    <div className="relative transform group-hover:scale-105 transition-transform duration-300">
+                      <QRCodeSVG 
+                        value={url} 
+                        size={160}
+                        level="H"
+                        fgColor="#111111"
+                        bgColor="#ffffff"
+                        imageSettings={{
+                          src: "https://api.iconify.design/lucide:utensils-crossed.svg?color=%23D4AF37",
+                          x: undefined,
+                          y: undefined,
+                          height: 32,
+                          width: 32,
+                          excavate: true,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full mt-auto p-4 bg-gradient-to-t from-[#D4AF37]/10 to-transparent print:bg-white text-center relative z-10">
+                  <p className="text-xs font-semibold tracking-widest text-[#D4AF37] print:text-black">ARJUNATABLE.COM</p>
+                </div>
               </div>
             </div>
           );
